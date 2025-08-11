@@ -1,0 +1,19 @@
+{
+  "name": "Too Many Tabs",
+  "description": "Reminder for too many open tabs",
+  "version": "1.0",
+  "manifest_version": 3,
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "permissions": ["tabs", "storage", "notifications"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "images/tabicon16.png",
+    "32": "images/tabicon32.png",
+    "48": "images/tabicon48.png",
+    "128": "images/tabicon128.png"
+  }
+}
