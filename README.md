@@ -6,3 +6,6 @@ Features:
 - you can set a reminder telling you to delete tabs when you reach a tab limit
 - you can set a tab limit -- it will trigger a reminder to delete some tabs (it won't stop you from opening new ones though)
 - you can write some quick notes in the popup (in case you have a habit of opening new tabs as notes)
+- [in progress] a visualization of your tab usage (ie: chart of # tabs opened in the past month)
+
+Made by someone with a lot of tabs

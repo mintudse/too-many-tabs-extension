@@ -11,14 +11,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearNoteBtn = document.getElementById('clearNoteBtn');
     const noteStatus = document.getElementById('noteStatus');
 
-    // This function fetches data and updates the entire popup's display
+    // Fetch data and update the entire popup's display
     function updatePopupUI() {
-        // Get the total number of tabs and display it.
+        // Get the total number of tabs and display it
         chrome.tabs.query({}, (tabs) => {
             tabCountEl.textContent = tabs.length;
         });
 
-        // Get the saved limit from chrome.storage.sync and update the UI.
+        // Get the saved limit and notes from chrome.storage.sync and update the UI
         chrome.storage.sync.get(['tabLimit', 'userNote'], (result) => {
             if (result.tabLimit) {
                 // Update the input field to show the current limit
@@ -47,27 +47,81 @@ document.addEventListener('DOMContentLoaded', () => {
                 noteArea.value = '';
             }
         });
+
+        // Load history and render chart
+        loadAndRenderChart();
     }
 
-    // Run the update function as soon as the popup loads to show current data.
+    // Chart history
+    function loadAndRenderChart() {
+        chrome.storage.local.get(['tabHistory'], (result) => {
+            const history = result.tabHistory || [];
+
+            // Process data: group tab creations by day for the last 30 days
+            const thirtyDaysAgo = new Date().setDate(new Date().getDate() - 30);
+            const dailyCounts = {};
+
+            for (let i = 0; i < 30; i++) {
+                const d = new Date(thirtyDaysAgo);
+                d.setDate(d.getDate() + i);
+                const key = d.toISOString().split('T')[0]; // YYYY-MM-DD
+                dailyCounts[key] = 0;
+            }
+
+            history.forEach(event => {
+                if (event.timestamp >= thirtyDaysAgo) {
+                    const key = new Date(event.timestamp).toISOString().split('T')[0];
+                    if (dailyCounts[key] !== undefined) {
+                        dailyCounts[key]++;
+                    }
+                }
+            });
+            
+            const chartLabels = Object.keys(dailyCounts).map(date => date.slice(5)); // Format to MM-DD
+            const chartData = Object.values(dailyCounts);
+
+            // Render chart using Chart.js
+            new Chart(chartCanvas, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Tabs Opened Per Day',
+                        data: chartData,
+                        borderColor: '#1877f2',
+                        backgroundColor: 'rgba(24, 119, 242, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        });
+    }
+
+
+    // Run the update function as soon as the popup loads to show current data
     // initial ui load
     updatePopupUI();
 
-    // Save the new limit when the button is clicked.
+    // Save the new limit when the button is clicked
     saveLimitBtn.addEventListener('click', () => {
         const newLimit = parseInt(limitInput.value, 10);
         // Check for a valid, positive number
         if (!isNaN(newLimit) && newLimit > 0) {
             // Save the value using the storage API.
             chrome.storage.sync.set({ tabLimit: newLimit }, () => {
-                // Update the entire UI to show the new limit and a confirmation message.
+                // Update the entire UI to show the new limit and a confirmation message
                 updatePopupUI(); 
                 statusEl.textContent = 'Limit saved!';
                 // Clear the status message after 2 seconds
                 setTimeout(() => { statusEl.textContent = ''; }, 2000);
             });
         } else {
-            // Handle invalid input.
+            // Handle invalid input
             statusEl.textContent = 'Please enter a valid number.';
             setTimeout(() => { statusEl.textContent = ''; }, 2000);
         }
@@ -92,109 +146,3 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 });
-
-
-// // When the popup is loaded, execute this code
-// document.addEventListener('DOMContentLoaded', () => {
-//     const tabCountEl = document.getElementById('tabCount');
-//     const limitDisplay = document.getElementById('limitDisplay');
-//     const limitInput = document.getElementById('limitInput');
-//     const saveLimitBtn = document.getElementById('saveLimitBtn');
-//     const statusEl = document.getElementById('status');
-//     const currentLimitEl = document.getElementById('currentLimit');
-
-//     // This function fetches data and updates the popup's display
-//     function updatePopupUI() {
-//         // Get the total number of tabs and display it.
-//         chrome.tabs.query({}, (tabs) => {
-//             tabCountEl.textContent = tabs.length;
-//         });
-
-//         // Get the saved limit from chrome.storage and update the UI.
-//         chrome.storage.sync.get(['tabLimit'], (result) => {
-//             if (result.tabLimit) {
-//                 limitInput.value = result.tabLimit;
-//                 currentLimitEl.textContent = `Current reminder set to ${result.tabLimit} tabs.`;
-//             } else {
-//                 currentLimitEl.textContent = 'No reminder limit is set.';
-//             }
-//         });
-//     }
-
-//     // Run the update function as soon as the popup loads.
-//     updatePopupUI();
-
-//     // Save the new limit when the button is clicked.
-//     saveLimitBtn.addEventListener('click', () => {
-//         const newLimit = parseInt(limitInput.value, 10);
-//         if (newLimit > 0) {
-//             // Save the value using the storage API.
-//             chrome.storage.sync.set({ tabLimit: newLimit }, () => {
-//                 // Update the UI to show the new limit and a confirmation message.
-//                 updatePopupUI(); 
-//                 statusEl.textContent = 'Limit saved!';
-//                 setTimeout(() => {
-//                     statusEl.textContent = '';
-//                 }, 2000);
-//             });
-//         } else {
-//             // Handle invalid input.
-//             statusEl.textContent = 'Please enter a valid number.';
-//              setTimeout(() => {
-//                     statusEl.textContent = '';
-//                 }, 2000);
-//         }
-//     });
-// });
-
-// // When the popup is loaded, execute this code
-// document.addEventListener('DOMContentLoaded', () => {
-//     const tabCountEl = document.getElementById('tabCount');
-//     const limitInput = document.getElementById('limitInput');
-//     const saveLimitBtn = document.getElementById('saveLimitBtn');
-//     const statusEl = document.getElementById('status');
-//     const currentLimitEl = document.getElementById('currentLimit');
-
-//     // This function fetches data and updates the popup's display
-//     function updatePopupUI() {
-//         // Get the total number of tabs and display it.
-//         chrome.tabs.query({}, (tabs) => {
-//             tabCountEl.textContent = tabs.length;
-//         });
-
-//         // Get the saved limit from chrome.storage and update the UI.
-//         chrome.storage.sync.get(['tabLimit'], (result) => {
-//             if (result.tabLimit) {
-//                 limitInput.value = result.tabLimit;
-//                 currentLimitEl.textContent = `Current reminder set to ${result.tabLimit} tabs.`;
-//             } else {
-//                 currentLimitEl.textContent = 'No reminder limit is set.';
-//             }
-//         });
-//     }
-
-//     // Run the update function as soon as the popup loads.
-//     updatePopupUI();
-
-//     // Save the new limit when the button is clicked.
-//     saveLimitBtn.addEventListener('click', () => {
-//         const newLimit = parseInt(limitInput.value, 10);
-//         if (newLimit > 0) {
-//             // Save the value using the storage API.
-//             chrome.storage.sync.set({ tabLimit: newLimit }, () => {
-//                 // Update the UI to show the new limit and a confirmation message.
-//                 updatePopupUI(); 
-//                 statusEl.textContent = 'Limit saved!';
-//                 setTimeout(() => {
-//                     statusEl.textContent = '';
-//                 }, 2000);
-//             });
-//         } else {
-//             // Handle invalid input.
-//             statusEl.textContent = 'Please enter a valid number.';
-//              setTimeout(() => {
-//                     statusEl.textContent = '';
-//                 }, 2000);
-//         }
-//     });
-// });
